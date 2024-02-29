@@ -34,6 +34,17 @@ def create_cell(cell_code, cell_value):
         connection.commit()
         print(cursor.rowcount > 0)
         
+        
+def update_cell(cell_code, cell_value):
+    with sqlite3.connect("database.sqlite") as connection:
+        cursor = connection.cursor() 
+        cursor.execute(
+        "UPDATE cells SET cell_value=? WHERE cell_code=?",
+        (cell_value, cell_code)
+        )
+        connection.commit()
+        print(cursor.rowcount > 0)
+
 
 def read_cell(cell_code):
     with sqlite3.connect("database.sqlite") as connection:
@@ -48,16 +59,15 @@ def read_cell(cell_code):
 
 def calculate_formula(tokens):
     formula = "".join(tokens)
+    # print(formula)
     return eval(formula)
 
 
-def calculate_cell(formula):
+def parse_formula(formula):
     formula = formula.replace(" ","")
     pattern = re.compile(r'([-+*/()])')
     tokens = re.split(pattern, formula)
     tokens = list(filter(None, tokens))
-    
-    # print(tokens)
 
     for i in range(0, len(tokens)):
         if re.match(r'^[+\-*/()]+$', tokens[i]):
@@ -71,11 +81,14 @@ def calculate_cell(formula):
                 )
                 connection.commit()
                 row = cursor.fetchone()
-                # print(row[1])
-                tokens[i] = row[1]
-            
+                if bool(re.match(r'^[A-Z]\d$', row[1])): 
+                    subtoken = parse_formula(row[0])
+                else:
+                    subtoken = row[1]
+                tokens[i] = f"({subtoken})"
+                
     # print(tokens)
-    return calculate_formula(tokens)
+    return tokens
     
 
 def get_cells():
