@@ -13,7 +13,7 @@ def setup_db():
         cursor.execute(
         "CREATE TABLE IF NOT EXISTS cells" +
         "(cell_code TEXT PRIMARY KEY, cell_value TEXT)"
-        ) 
+        )
         connection.commit()
         
 
@@ -44,9 +44,18 @@ Argument:
 Returns:
     Boolean - If Cell Code is Valid
 """
-def check_valid_code(cell_code):
-    return bool(re.match(r'^[A-Z]\d$', cell_code))
-
+def check_valid_code(cell_code: str):
+    if not bool(re.match(r"[A-Z]",cell_code[0])):
+        return False
+    number = cell_code[1:]
+    try:
+        int(number)
+        if (number > 999) or (number < 1):
+            return False
+        return True
+    except:
+        return False
+        
         
 """Creates Cell
 
@@ -126,35 +135,38 @@ Return:
                array of tokens.
 """
 def parse_formula(formula):
-    formula = formula.replace(" ","")
-    pattern = re.compile(r'([-+*/()])')
-    tokens = re.split(pattern, formula)
-    tokens = list(filter(None, tokens))
-    # print("pretoken" + str(tokens))
+    try:
+        formula = formula.replace(" ","")
+        pattern = re.compile(r'([-+*/()])')
+        tokens = re.split(pattern, formula)
+        tokens = list(filter(None, tokens))
+        # print("pretoken" + str(tokens))
 
-    counter = 0
-    for token in tokens:
-        if bool(re.match(r"^[\d.]+|[-+*/()]{1}$", token)): # regex magic
-            # print("pass")
-            pass
-        else:
-            with sqlite3.connect(database) as connection:
-                cursor = connection.cursor() 
-                cursor.execute(
-                "SELECT cell_code, cell_value FROM cells WHERE cell_code=?", (token,)
-                )
-                connection.commit()
-                row = cursor.fetchone()
-                # print("row" + str(row))
-                subtoken = parse_formula(row[1])
-                # print("subtoken" + str(subtoken))
-                subtoken.insert(0,"(")
-                subtoken.append(")")
-                tokens[counter:counter + 1] = subtoken
-        counter += 1
-        
-    # print("tokens" + str(tokens) + "\n")
-    return tokens
+        counter = 0
+        for token in tokens:
+            if bool(re.match(r"^[\d.]+|[-+*/()]{1}$", token)): # regex magic
+                # print("pass")
+                pass
+            else:
+                with sqlite3.connect(database) as connection:
+                    cursor = connection.cursor() 
+                    cursor.execute(
+                    "SELECT cell_code, cell_value FROM cells WHERE cell_code=?", (token,)
+                    )
+                    connection.commit()
+                    row = cursor.fetchone()
+                    # print("row" + str(row))
+                    subtoken = parse_formula(row[1])
+                    # print("subtoken" + str(subtoken))
+                    subtoken.insert(0,"(")
+                    subtoken.append(")")
+                    tokens[counter:counter + 1] = subtoken
+            counter += 1
+            
+        # print("tokens" + str(tokens) + "\n")
+        return tokens
+    except:
+        return ["0"]
     
 
 """Get List of Cells

@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-import db_sqlite
+import db_firebase as db
 
 # Initializing variables
 app = Flask(__name__)
@@ -20,28 +20,28 @@ Returns:
 """
 @app.route("/cells/<string:s>", methods=["PUT"])
 def sc_create_cell(s):
-    id = s
     try:
-        code = request.json["id"]
-        value = request.json["formula"]
+        id = s
+        try:
+            code = request.json["id"]
+            value = request.json["formula"]
+        except:
+            return "", 400 # Bad Request, Code
+        
+        if (id != code):
+            return "",400 # Bad Request, Cell ID Mismatch
+        
+        if (db.check_exists(id) == 1):
+            db.update_cell(id, value)
+            return "",204 # Already exists
+        
+        if (db.check_valid_code(id)):
+            return "",400 # Code invalid
+        
+        db.create_cell(id, value)
+        return "",201 # Created
     except:
-        return "", 400 # Bad Request, Code
-    
-    if (id != code):
-        return "",400 # Bad Request, Cell ID Mismatch
-    
-    if (db_sqlite.check_exists(code) == 1):
-        db_sqlite.update_cell(id, value)
-        return "",204 # Already exists
-    
-    if (value == "" or value == None):
-        return "",400 # Content Missing
-    
-    if (code == "" or code == None):
-        return "",400 # Content Missing
-    
-    db_sqlite.create_cell(id, value)
-    return "",201 # Created
+        return "",500 # Internal Server Error
     
     
 """GET Request Handler (Single Cell)
@@ -55,20 +55,22 @@ Returns:
 """
 @app.route("/cells/<string:s>", methods=["GET"])
 def sc_read_cell_single(s):
-    cell_data = db_sqlite.read_cell(s)
-    
-    if (cell_data == None or cell_data == ""):
-        return "", 404 # Cell Not found
-    
     try:
-        float(cell_data)
-        return {"formula" : str(cell_data), "id" : s},200 # Cell as float
+        cell_data = db.read_cell(s)
+        
+        if (cell_data == None or cell_data == ""):
+            return "", 404 # Cell Not found
+        
+        try:
+            float(cell_data)
+            return {"formula" : str(cell_data), "id" : s},200 # Cell as float
+        except:
+            parsed_data = db.parse_formula(cell_data)
+            calc_data = db.calculate_formula(parsed_data)
+            print(cell_data)
+            return {"formula" : str(calc_data), "id" : s}, 200 # Cell as float
     except:
-        parsed_data = db_sqlite.parse_formula(cell_data)
-        calc_data = db_sqlite.calculate_formula(parsed_data)
-        print(cell_data)
-        return {"formula" : str(calc_data), "id" : s}, 200
-
+        return "", 500 # Internal Server Error
 
 """GET Request Handler (All Cells)
 Returns a list of all existing cells.
@@ -79,11 +81,15 @@ Returns:
 """
 @app.route("/cells", methods=["GET"])
 def list_cells():
-    cells = db_sqlite.get_cells()
+    # try:
+    cells = db.get_cells()
     if cells == None:
         return "",204 # No Content
     else:
-        return jsonify(cells), 200
+        return jsonify(cells), 200 # List of all cell
+    # except Exception as e:
+    #     print(e)
+    #     return "", 500 # Internal Server Error
 
 
 """DELETE Request Handler
@@ -97,15 +103,20 @@ Returns:
 """
 @app.route("/cells/<string:s>", methods=["DELETE"])
 def delete_cell(s):
-    cell = s
-    if (db_sqlite.check_exists(cell) == 1):   
-        db_sqlite.delete_cell(cell)
-        return "",204 # Cell Deleted
-    return "", 404 # Cell not found
+    try:
+        cell = s
+        if (db.check_exists(cell) == 1):   
+            db.delete_cell(cell)
+            return "",204 # Cell Deleted
+        return "", 404 # Cell not found
+    except:
+        return "", 500 # Internal Server Error
 
-        
+
+"""Main Function
+"""
 def main():
-    db_sqlite.setup_db()
+    db.setup_db()
     app.run(host="localhost",port=3000)
 
 

@@ -1,6 +1,0 @@
-test 6 is hardcoded so badly that a space can ruin the whole thing
-
-spec is too vague, at what conditions should a 204 be sent vs a 200
-
-spec didnt mention that attempts to create an existing cell would update the cell instead to ignore the request (even though it is a PUT request)
-
