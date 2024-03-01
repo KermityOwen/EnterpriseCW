@@ -23,6 +23,18 @@ def check_exists(cell_code):
         row = cursor.fetchone()
         return row[0]
 
+
+def check_valid_code(cell_code):
+    return bool(re.match(r'^[A-Z]\d$', cell_code))
+
+# def check_valid_value(cell_value):
+#     formula = formula.replace(" ","")
+#     pattern = re.compile(r'([-+*/()])')
+#     tokens = re.split(pattern, formula)
+#     tokens = list(filter(None, tokens))
+    
+    
+
         
 def create_cell(cell_code, cell_value):
     with sqlite3.connect("database.sqlite") as connection:
@@ -59,7 +71,7 @@ def read_cell(cell_code):
 
 def calculate_formula(tokens):
     formula = "".join(tokens)
-    # print(formula)
+    print(formula)
     return eval(formula)
 
 
@@ -68,26 +80,30 @@ def parse_formula(formula):
     pattern = re.compile(r'([-+*/()])')
     tokens = re.split(pattern, formula)
     tokens = list(filter(None, tokens))
+    # print("pretoken" + str(tokens))
 
-    for i in range(0, len(tokens)):
-        if re.match(r'^[+\-*/()]+$', tokens[i]):
-            print("pass")
+    counter = 0
+    for token in tokens:
+        if bool(re.match(r"^[\d.]+|[-+*/()]{1}$", token)): # regex magic
+            # print("pass")
             pass
         else:
             with sqlite3.connect("database.sqlite") as connection:
                 cursor = connection.cursor() 
                 cursor.execute(
-                "SELECT cell_code, cell_value FROM cells WHERE cell_code=?", (tokens[i],)
+                "SELECT cell_code, cell_value FROM cells WHERE cell_code=?", (token,)
                 )
                 connection.commit()
                 row = cursor.fetchone()
-                if bool(re.match(r'^[A-Z]\d$', row[1])): 
-                    subtoken = parse_formula(row[0])
-                else:
-                    subtoken = row[1]
-                tokens[i] = f"({subtoken})"
-                
-    # print(tokens)
+                # print("row" + str(row))
+                subtoken = parse_formula(row[1])
+                # print("subtoken" + str(subtoken))
+                subtoken.insert(0,"(")
+                subtoken.append(")")
+                tokens[counter:counter + 1] = subtoken
+        counter += 1
+        
+    # print("tokens" + str(tokens) + "\n")
     return tokens
     
 
@@ -112,3 +128,4 @@ def delete_cell(cell_code):
         )
         connection.commit()
         
+# print(parse_formula("(3 + 4)"))

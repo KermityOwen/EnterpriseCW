@@ -8,7 +8,7 @@ database = "database.sqlite"
 app = Flask(__name__)
 app.config["DEBUG"] = True
 
-        
+
 @app.route("/cells/<string:s>", methods=["PUT"])
 def sc_create_cell(s):
     id = s
