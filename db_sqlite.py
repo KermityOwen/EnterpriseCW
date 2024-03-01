@@ -1,10 +1,14 @@
 import sqlite3
 import re
 
+# Intialising variables
 database = "database.sqlite"
 
+
+"""Sets Up SQLite3 Database
+"""
 def setup_db():
-    with sqlite3.connect("database.sqlite") as connection:
+    with sqlite3.connect(database) as connection:
         cursor = connection.cursor()
         cursor.execute(
         "CREATE TABLE IF NOT EXISTS cells" +
@@ -13,8 +17,16 @@ def setup_db():
         connection.commit()
         
 
+"""Checks If Cell Already Exists
+
+Argument:
+    Cell Code
+    
+Returns:
+    Boolean - If Cell Already Exists
+"""
 def check_exists(cell_code):
-    with sqlite3.connect("database.sqlite") as connection:
+    with sqlite3.connect(database) as connection:
         cursor = connection.cursor() 
         cursor.execute(
         "SELECT EXISTS(SELECT cell_code FROM cells WHERE cell_code=?)", (cell_code,)
@@ -24,20 +36,25 @@ def check_exists(cell_code):
         return row[0]
 
 
+"""Checks If Cell Code is Valid
+
+Argument:
+    Cell Code
+    
+Returns:
+    Boolean - If Cell Code is Valid
+"""
 def check_valid_code(cell_code):
     return bool(re.match(r'^[A-Z]\d$', cell_code))
 
-# def check_valid_value(cell_value):
-#     formula = formula.replace(" ","")
-#     pattern = re.compile(r'([-+*/()])')
-#     tokens = re.split(pattern, formula)
-#     tokens = list(filter(None, tokens))
-    
-    
-
         
+"""Creates Cell
+
+Argument:
+    Cell Code, Cell Value
+"""
 def create_cell(cell_code, cell_value):
-    with sqlite3.connect("database.sqlite") as connection:
+    with sqlite3.connect(database) as connection:
         cursor = connection.cursor() 
         cursor.execute(
         "INSERT INTO cells(cell_code, cell_value) VALUES (?,?)",
@@ -47,8 +64,13 @@ def create_cell(cell_code, cell_value):
         print(cursor.rowcount > 0)
         
         
+"""Updates Cell
+
+Argument:
+    Cell Code, Cell Value
+"""
 def update_cell(cell_code, cell_value):
-    with sqlite3.connect("database.sqlite") as connection:
+    with sqlite3.connect(database) as connection:
         cursor = connection.cursor() 
         cursor.execute(
         "UPDATE cells SET cell_value=? WHERE cell_code=?",
@@ -58,8 +80,16 @@ def update_cell(cell_code, cell_value):
         print(cursor.rowcount > 0)
 
 
+"""Reads Simple Cells
+
+Argument:
+    Cell Code
+
+Returns:
+    Float - Cell Value
+"""
 def read_cell(cell_code):
-    with sqlite3.connect("database.sqlite") as connection:
+    with sqlite3.connect(database) as connection:
         cursor = connection.cursor() 
         cursor.execute(
         "SELECT cell_code, cell_value FROM cells WHERE cell_code=?", (cell_code,)
@@ -69,12 +99,32 @@ def read_cell(cell_code):
         return row[1] # Value part
     
 
+"""Evaluates Value from a Formula
+
+Argument:
+    string[] - Array of tokens representing a formula
+    
+Return:
+    float - Evaluated result
+"""
 def calculate_formula(tokens):
     formula = "".join(tokens)
     print(formula)
     return eval(formula)
 
 
+"""Parses Formula into Token
+Gets a string and recursively parses the formula into an
+array of tokens that represent an equation. Resolves all
+cell links (codes) recursively
+
+Argument:
+    string - Representing formula
+
+Return:
+    string[] - Representing processed formula as an
+               array of tokens.
+"""
 def parse_formula(formula):
     formula = formula.replace(" ","")
     pattern = re.compile(r'([-+*/()])')
@@ -88,7 +138,7 @@ def parse_formula(formula):
             # print("pass")
             pass
         else:
-            with sqlite3.connect("database.sqlite") as connection:
+            with sqlite3.connect(database) as connection:
                 cursor = connection.cursor() 
                 cursor.execute(
                 "SELECT cell_code, cell_value FROM cells WHERE cell_code=?", (token,)
@@ -107,8 +157,14 @@ def parse_formula(formula):
     return tokens
     
 
+"""Get List of Cells
+
+Returns:
+    string[] - Array containing cell codes of all
+               existing cells
+"""
 def get_cells():
-    with sqlite3.connect("database.sqlite") as connection:
+    with sqlite3.connect(database) as connection:
         connection.row_factory = lambda cursor, row: row[0]
         cursor = connection.cursor() 
         cursor.execute(
@@ -120,12 +176,15 @@ def get_cells():
         return cells
     
     
+"""Deletes Cell
+
+Argument:
+    Cell code
+"""
 def delete_cell(cell_code):
-    with sqlite3.connect("database.sqlite") as connection:
+    with sqlite3.connect(database) as connection:
         cursor = connection.cursor() 
         cursor.execute(
         "DELETE FROM cells WHERE cell_code=?", (cell_code,)
         )
         connection.commit()
-        
-# print(parse_formula("(3 + 4)"))
