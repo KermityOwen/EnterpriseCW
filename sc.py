@@ -1,5 +1,20 @@
+# Imports
 from flask import Flask, request, jsonify
-import db_firebase as db
+import optparse
+
+
+# Conditional imports
+p = optparse.OptionParser()
+p.add_option('--r', '-r', default="firebase")
+options, arguments = p.parse_args()
+
+if (options.r == "sqlite"):
+    print("sqlite")
+    import db_sqlite as db
+else:
+    print("firebase")
+    import db_firebase as db
+
 
 # Initializing variables
 app = Flask(__name__)
@@ -71,6 +86,7 @@ def sc_read_cell_single(s):
             return {"formula" : str(calc_data), "id" : s}, 200 # Cell as float
     except:
         return "", 500 # Internal Server Error
+
 
 """GET Request Handler (All Cells)
 Returns a list of all existing cells.

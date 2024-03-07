@@ -1,8 +1,10 @@
 import requests
 import re
 import json
+import os
 
-database_url = "https://ecm3408-b5bf7-default-rtdb.europe-west1.firebasedatabase.app"
+database_name = os.environ["FBASE"]
+database_url = "https://"+database_name+"-default-rtdb.europe-west1.firebasedatabase.app"
 
 def setup_db():
     return
